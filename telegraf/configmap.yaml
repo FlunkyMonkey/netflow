@@ -13,7 +13,6 @@ data:
 
     [[inputs.netflow]]
       service_address = "udp://:2055"
-      netflow_version = 9
 
     # DNS enrichment for source IP
     # Field names verified via Phase 3 discovery — update if schema.md differs
