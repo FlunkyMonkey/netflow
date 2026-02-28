@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: netflow
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: InfluxDB-Netflow
+        type: influxdb
+        url: http://influxdb.netflow.svc.cluster.local:8086
+        jsonData:
+          version: Flux
+          organization: homelab
+          defaultBucket: netflow
+          timeInterval: "1m"
+          queryTimeout: "60s"
+        secureJsonData:
+          token: $INFLUXDB_TOKEN

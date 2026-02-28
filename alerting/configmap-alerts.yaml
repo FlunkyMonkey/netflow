@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-alert-rules
+  namespace: netflow
+data:
+  # Grafana alert rules are provisioned via Grafana's alerting API or UI.
+  # These rules are defined here for reference and applied via the Grafana
+  # provisioning API once Grafana is running.
+  #
+  # Rule 1: Top Talker Spike
+  # Compares 5-minute byte sum to 1-hour rolling mean × 2 per source IP.
+  # Evaluates every 5m, pending period 10m.
+  #
+  # Flux query for Top Talker Spike:
+  # recent = from(bucket: "netflow")
+  #   |> range(start: -5m)
+  #   |> filter(fn: (r) => r._measurement == "netflow" and r._field == "octet_delta_count")
+  #   |> group(columns: ["source_ipv4_address"])
+  #   |> sum()
+  #
+  # baseline = from(bucket: "netflow")
+  #   |> range(start: -1h)
+  #   |> filter(fn: (r) => r._measurement == "netflow" and r._field == "octet_delta_count")
+  #   |> group(columns: ["source_ipv4_address"])
+  #   |> mean()
+  #   |> map(fn: (r) => ({r with _value: r._value * 2.0}))
+  #
+  # join(tables: {recent: recent, baseline: baseline}, on: ["source_ipv4_address"])
+  #   |> filter(fn: (r) => r._value_recent > r._value_baseline)
+  #
+  # Rule 2: Flow Data Gap
+  # Fires when netflow point count in last 5 minutes = 0.
+  # Evaluates every 2m, fires immediately (no pending period).
+  #
+  # Flux query for Flow Data Gap:
+  # from(bucket: "netflow")
+  #   |> range(start: -5m)
+  #   |> filter(fn: (r) => r._measurement == "netflow")
+  #   |> count()
+  #
+  # Threshold: < 1 → ALERT
+  #
+  # Rule 3: New Unknown Device
+  # Watches netflow_new_devices measurement for any records in last 5 minutes.
+  # Created by the InfluxDB task — Grafana watches the output measurement.
+  #
+  # Flux query:
+  # from(bucket: "netflow")
+  #   |> range(start: -5m)
+  #   |> filter(fn: (r) => r._measurement == "netflow_new_devices" and r._field == "new_device")
+  #   |> count()
+  #
+  # Threshold: > 0 → ALERT
+  alert-rules-readme: |
+    Alert rules are applied via Grafana UI after initial deployment.
+    See configmap-alerts.yaml comments for Flux queries and thresholds.
+    Contact point: Alertmanager at 172.18.1.202

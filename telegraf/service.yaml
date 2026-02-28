@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: telegraf
+  namespace: netflow
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: "172.18.1.207"
+spec:
+  type: LoadBalancer
+  selector:
+    app: telegraf
+  ports:
+    - name: netflow
+      port: 2055
+      targetPort: 2055
+      protocol: UDP

@@ -1,0 +1,52 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: influxdb-task-loader
+  namespace: netflow
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-influxdb
+          image: curlimages/curl:8.5.0
+          command:
+            - sh
+            - -c
+            - |
+              until curl -sf http://influxdb.netflow.svc.cluster.local:8086/health; do
+                echo "waiting for influxdb..."; sleep 5
+              done
+      containers:
+        - name: task-loader
+          image: influxdb:2.7
+          envFrom:
+            - secretRef:
+                name: influxdb-admin-token
+          volumeMounts:
+            - name: flux-task
+              mountPath: /flux
+          command:
+            - sh
+            - -c
+            - |
+              # Check if task already exists to avoid duplicates
+              EXISTING=$(influx task list \
+                --org homelab \
+                --token $INFLUXDB_TOKEN \
+                --host http://influxdb.netflow.svc.cluster.local:8086 \
+                --json 2>/dev/null | jq -r '.[] | select(.name == "new-device-detection") | .id')
+              if [ -n "$EXISTING" ]; then
+                echo "Task new-device-detection already exists (id: $EXISTING), skipping"
+                exit 0
+              fi
+              influx task create \
+                --org homelab \
+                --token $INFLUXDB_TOKEN \
+                --host http://influxdb.netflow.svc.cluster.local:8086 \
+                --file /flux/influxdb-task-new-device.flux
+              echo "Task created successfully"
+      volumes:
+        - name: flux-task
+          configMap:
+            name: new-device-flux

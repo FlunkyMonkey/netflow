@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: netflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      securityContext:
+        fsGroup: 472
+        runAsUser: 472
+      containers:
+        - name: grafana
+          image: grafana/grafana:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: grafana-influxdb-token
+          env:
+            - name: GF_PATHS_CONFIG
+              value: /etc/grafana/grafana.ini
+          volumeMounts:
+            - name: grafana-storage
+              mountPath: /var/lib/grafana
+            - name: grafana-ini
+              mountPath: /etc/grafana/grafana.ini
+              subPath: grafana.ini
+            - name: custom-css
+              mountPath: /usr/share/grafana/public/css/custom.css
+              subPath: custom.css
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+            - name: dashboard-providers
+              mountPath: /etc/grafana/provisioning/dashboards/providers.yaml
+              subPath: dashboards.yaml
+            - name: dashboard-top-talkers
+              mountPath: /etc/grafana/provisioning/dashboards/top-talkers.json
+              subPath: top-talkers.json
+            - name: dashboard-top-apps
+              mountPath: /etc/grafana/provisioning/dashboards/top-apps.json
+              subPath: top-apps.json
+            - name: dashboard-top-conversations
+              mountPath: /etc/grafana/provisioning/dashboards/top-conversations.json
+              subPath: top-conversations.json
+            - name: dashboard-device-flows
+              mountPath: /etc/grafana/provisioning/dashboards/device-flows.json
+              subPath: device-flows.json
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+      volumes:
+        - name: grafana-storage
+          persistentVolumeClaim:
+            claimName: grafana-pvc
+        - name: grafana-ini
+          configMap:
+            name: grafana-ini
+        - name: custom-css
+          configMap:
+            name: grafana-custom-css
+        - name: datasources
+          configMap:
+            name: grafana-datasources
+        - name: dashboard-providers
+          configMap:
+            name: grafana-dashboard-providers
+        - name: dashboard-top-talkers
+          configMap:
+            name: grafana-dashboard-top-talkers
+        - name: dashboard-top-apps
+          configMap:
+            name: grafana-dashboard-top-apps
+        - name: dashboard-top-conversations
+          configMap:
+            name: grafana-dashboard-top-conversations
+        - name: dashboard-device-flows
+          configMap:
+            name: grafana-dashboard-device-flows

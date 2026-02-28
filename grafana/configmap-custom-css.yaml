@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-custom-css
+  namespace: netflow
+data:
+  custom.css: |
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+    body { background: #0f0f1a !important; font-family: 'Inter', sans-serif !important; color: #e8d5b7 !important; }
+    .main-view, .scroll-canvas { background: #0f0f1a !important; }
+    .panel-container { background: #1e1e2e !important; border: 1px solid #2d2d44 !important; }
+    .navbar, .sidemenu, .page-header { background: #1a1a2e !important; }
+    a, .text-link, .panel-title-text { color: #c49a6c !important; }
+    h1, h2, h3, h4 { color: #e8d5b7 !important; }

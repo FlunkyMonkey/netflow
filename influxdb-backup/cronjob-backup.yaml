@@ -1,0 +1,64 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: influxdb-backup
+  namespace: netflow
+spec:
+  schedule: "0 1 * * *"    # 1 AM nightly, before Velero at 2 AM
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          initContainers:
+            - name: wait-for-influxdb
+              image: curlimages/curl:8.5.0
+              command:
+                - sh
+                - -c
+                - |
+                  until curl -sf http://influxdb.netflow.svc.cluster.local:8086/health; do
+                    echo "waiting for influxdb..."; sleep 5
+                  done
+            - name: influx-backup
+              image: influxdb:2.7
+              envFrom:
+                - secretRef:
+                    name: influxdb-admin-token
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  echo "Starting InfluxDB backup"
+                  influx backup /backup/data \
+                    --org homelab \
+                    --token "$INFLUXDB_TOKEN" \
+                    --host http://influxdb.netflow.svc.cluster.local:8086
+                  echo "Backup written to /backup/data"
+              volumeMounts:
+                - name: backup-workspace
+                  mountPath: /backup
+          containers:
+            - name: mc-upload
+              image: minio/mc:latest
+              envFrom:
+                - secretRef:
+                    name: minio-creds
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  mc alias set minio http://172.18.1.205 "$MINIO_ACCESS_KEY" "$MINIO_SECRET_KEY"
+                  mc cp --recursive /backup/data/ "minio/influxdb-backups/$(date +%Y-%m-%d)/"
+                  echo "Upload complete"
+              volumeMounts:
+                - name: backup-workspace
+                  mountPath: /backup
+          volumes:
+            - name: backup-workspace
+              emptyDir: {}
