@@ -22,11 +22,11 @@ data:
       max_parallel_lookups = 20
 
       [[processors.reverse_dns.lookup]]
-        field = "source_ipv4_address"
+        field = "src"
         dest = "src_host"
 
       [[processors.reverse_dns.lookup]]
-        field = "destination_ipv4_address"
+        field = "dst"
         dest = "dst_host"
 
     [[outputs.influxdb_v2]]

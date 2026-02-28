@@ -6,8 +6,8 @@ option task = {name: "new-device-detection", every: 5m}
 histTable = from(bucket: "netflow")
   |> range(start: -24h, stop: -5m)
   |> filter(fn: (r) => r._measurement == "netflow")
-  |> keep(columns: ["source_ipv4_address"])
-  |> distinct(column: "source_ipv4_address")
+  |> keep(columns: ["src"])
+  |> distinct(column: "src")
 
 histIPs = histTable |> findColumn(fn: (key) => true, column: "_value")
 
@@ -15,8 +15,8 @@ histIPs = histTable |> findColumn(fn: (key) => true, column: "_value")
 from(bucket: "netflow")
   |> range(start: -5m)
   |> filter(fn: (r) => r._measurement == "netflow")
-  |> keep(columns: ["source_ipv4_address"])
-  |> distinct(column: "source_ipv4_address")
+  |> keep(columns: ["src"])
+  |> distinct(column: "src")
   // Exclude private/internal ranges
   |> filter(fn: (r) =>
       not strings.hasPrefix(v: r._value, prefix: "172.18.") and
@@ -29,7 +29,7 @@ from(bucket: "netflow")
   |> map(fn: (r) => ({
       _time: now(),
       _measurement: "netflow_new_devices",
-      source_ipv4_address: r._value,
+      src: r._value,
       _field: "new_device",
       _value: 1
   }))
