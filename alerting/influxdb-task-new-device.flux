@@ -1,6 +1,6 @@
-option task = {name: "new-device-detection", every: 5m}
-
 import "strings"
+
+option task = {name: "new-device-detection", every: 5m}
 
 // Get historical external IPs as an array for set membership check
 histTable = from(bucket: "netflow")
