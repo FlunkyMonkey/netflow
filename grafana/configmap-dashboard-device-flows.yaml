@@ -9,7 +9,7 @@ data:
       "title": "Device Flows",
       "uid": "netflow-device-flows",
       "schemaVersion": 38,
-      "version": 1,
+      "version": 2,
       "refresh": "1m",
       "time": { "from": "now-6h", "to": "now" },
       "panels": [
@@ -31,7 +31,7 @@ data:
           "targets": [
             {
               "datasource": { "type": "influxdb", "uid": "PE1145B8E425975A4" },
-              "query": "from(bucket: \"netflow\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"netflow\"\n      and r._field == \"in_bytes\"\n      and r[\"src\"] == \"${device}\")\n  |> aggregateWindow(every: 1m, fn: sum)",
+              "query": "from(bucket: \"netflow\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"netflow\" and (r._field == \"in_bytes\" or r._field == \"src\"))\n  |> pivot(rowKey: [\"_time\", \"source\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> filter(fn: (r) => r.src == \"${device}\")\n  |> keep(columns: [\"_time\", \"in_bytes\"])\n  |> rename(columns: {in_bytes: \"_value\"})\n  |> aggregateWindow(every: 1m, fn: sum, createEmpty: false)",
               "refId": "A"
             }
           ]
@@ -40,20 +40,14 @@ data:
       "templating": {
         "list": [
           {
-            "name": "datasource",
-            "type": "datasource",
-            "pluginId": "influxdb",
-            "current": { "text": "InfluxDB-Netflow", "value": "PE1145B8E425975A4" }
-          },
-          {
             "name": "device",
             "type": "query",
             "datasource": { "type": "influxdb", "uid": "PE1145B8E425975A4" },
-            "query": "from(bucket: \"netflow\")\n  |> range(start: -1h)\n  |> keep(columns: [\"src\", \"src_host\"])\n  |> distinct(column: \"src\")",
+            "query": "from(bucket: \"netflow\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"netflow\" and r._field == \"src\")\n  |> keep(columns: [\"_value\"])\n  |> distinct(column: \"_value\")",
             "label": "Device",
             "multi": false,
             "includeAll": false,
-            "current": { "text": "InfluxDB-Netflow", "value": "PE1145B8E425975A4" }
+            "current": {}
           }
         ]
       }

@@ -9,7 +9,7 @@ data:
       "title": "Top Conversations",
       "uid": "netflow-top-conversations",
       "schemaVersion": 38,
-      "version": 1,
+      "version": 2,
       "refresh": "5m",
       "time": { "from": "now-24h", "to": "now" },
       "panels": [
@@ -19,7 +19,7 @@ data:
           "type": "table",
           "gridPos": { "h": 20, "w": 24, "x": 0, "y": 0 },
           "options": {
-            "sortBy": [{ "displayName": "Value", "desc": true }]
+            "sortBy": [{ "displayName": "in_bytes", "desc": true }]
           },
           "fieldConfig": {
             "defaults": {
@@ -30,20 +30,11 @@ data:
           "targets": [
             {
               "datasource": { "type": "influxdb", "uid": "PE1145B8E425975A4" },
-              "query": "from(bucket: \"netflow\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"netflow\" and r._field == \"in_bytes\")\n  |> group(columns: [\"src\", \"dst\", \"src_host\", \"dst_host\"])\n  |> sum()\n  |> sort(columns: [\"_value\"], desc: true)\n  |> limit(n: 20)",
+              "query": "from(bucket: \"netflow\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"netflow\" and (r._field == \"in_bytes\" or r._field == \"src\" or r._field == \"dst\"))\n  |> pivot(rowKey: [\"_time\", \"source\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group(columns: [\"src\", \"dst\"])\n  |> sum(column: \"in_bytes\")\n  |> group()\n  |> sort(columns: [\"in_bytes\"], desc: true)\n  |> limit(n: 20)",
               "refId": "A"
             }
           ]
         }
       ],
-      "templating": {
-        "list": [
-          {
-            "name": "datasource",
-            "type": "datasource",
-            "pluginId": "influxdb",
-            "current": { "text": "InfluxDB-Netflow", "value": "PE1145B8E425975A4" }
-          }
-        ]
-      }
+      "templating": { "list": [] }
     }
