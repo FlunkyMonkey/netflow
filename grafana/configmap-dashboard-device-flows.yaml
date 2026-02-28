@@ -30,7 +30,7 @@ data:
           },
           "targets": [
             {
-              "datasource": { "type": "influxdb", "uid": "${datasource}" },
+              "datasource": { "type": "influxdb", "uid": "PE1145B8E425975A4" },
               "query": "from(bucket: \"netflow\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"netflow\"\n      and r._field == \"in_bytes\"\n      and r[\"src\"] == \"${device}\")\n  |> aggregateWindow(every: 1m, fn: sum)",
               "refId": "A"
             }
@@ -43,17 +43,17 @@ data:
             "name": "datasource",
             "type": "datasource",
             "pluginId": "influxdb",
-            "current": {}
+            "current": { "text": "InfluxDB-Netflow", "value": "PE1145B8E425975A4" }
           },
           {
             "name": "device",
             "type": "query",
-            "datasource": { "type": "influxdb", "uid": "${datasource}" },
+            "datasource": { "type": "influxdb", "uid": "PE1145B8E425975A4" },
             "query": "from(bucket: \"netflow\")\n  |> range(start: -1h)\n  |> keep(columns: [\"src\", \"src_host\"])\n  |> distinct(column: \"src\")",
             "label": "Device",
             "multi": false,
             "includeAll": false,
-            "current": {}
+            "current": { "text": "InfluxDB-Netflow", "value": "PE1145B8E425975A4" }
           }
         ]
       }
