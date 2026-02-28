@@ -14,24 +14,20 @@ data:
     [[inputs.netflow]]
       service_address = "udp://:2055"
 
-    # DNS enrichment for source IP
+    # DNS enrichment — reverse_dns processor adds src_host / dst_host tags
     # Field names verified via Phase 3 discovery — update if schema.md differs
-    [[processors.dns_lookup]]
-      nameservers = ["172.18.232.10:53", "172.18.5.10:53"]
+    [[processors.reverse_dns]]
       cache_ttl = "5m"
       lookup_timeout = "3s"
       max_parallel_lookups = 20
-      origin = "source_ipv4_address"
-      dest = "src_host"
 
-    # DNS enrichment for destination IP
-    [[processors.dns_lookup]]
-      nameservers = ["172.18.232.10:53", "172.18.5.10:53"]
-      cache_ttl = "5m"
-      lookup_timeout = "3s"
-      max_parallel_lookups = 20
-      origin = "destination_ipv4_address"
-      dest = "dst_host"
+      [[processors.reverse_dns.lookup]]
+        field = "source_ipv4_address"
+        dest = "src_host"
+
+      [[processors.reverse_dns.lookup]]
+        field = "destination_ipv4_address"
+        dest = "dst_host"
 
     [[outputs.influxdb_v2]]
       urls = ["http://influxdb.netflow.svc.cluster.local:8086"]
