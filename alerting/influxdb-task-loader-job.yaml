@@ -30,20 +30,22 @@ spec:
             - sh
             - -c
             - |
-              # Check if task already exists to avoid duplicates
+              set -e
+              INFLUX_HOST=http://influxdb.netflow.svc.cluster.local:8086
+              # Check if task already exists to avoid duplicates on pod restart
               EXISTING=$(influx task list \
                 --org homelab \
-                --token $INFLUXDB_TOKEN \
-                --host http://influxdb.netflow.svc.cluster.local:8086 \
-                --json 2>/dev/null | jq -r '.[] | select(.name == "new-device-detection") | .id')
+                --token "$INFLUXDB_TOKEN" \
+                --host "$INFLUX_HOST" 2>/dev/null | grep "new-device-detection" | awk '{print $1}')
               if [ -n "$EXISTING" ]; then
                 echo "Task new-device-detection already exists (id: $EXISTING), skipping"
                 exit 0
               fi
+              echo "Creating new-device-detection task..."
               influx task create \
                 --org homelab \
-                --token $INFLUXDB_TOKEN \
-                --host http://influxdb.netflow.svc.cluster.local:8086 \
+                --token "$INFLUXDB_TOKEN" \
+                --host "$INFLUX_HOST" \
                 --file /flux/influxdb-task-new-device.flux
               echo "Task created successfully"
       volumes:
