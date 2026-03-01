@@ -31,7 +31,7 @@ data:
           "targets": [
             {
               "datasource": { "type": "influxdb", "uid": "PE1145B8E425975A4" },
-              "query": "from(bucket: \"netflow\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"netflow\" and (r._field == \"in_bytes\" or r._field == \"src\"))\n  |> pivot(rowKey: [\"_time\", \"source\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> filter(fn: (r) => r.src == \"${device}\")\n  |> keep(columns: [\"_time\", \"in_bytes\"])\n  |> rename(columns: {in_bytes: \"_value\"})\n  |> aggregateWindow(every: 1m, fn: sum, createEmpty: false)",
+              "query": "from(bucket: \"netflow\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"netflow\" and (r._field == \"in_bytes\" or r._field == \"src\" or r._field == \"src_host\"))\n  |> pivot(rowKey: [\"_time\", \"source\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with device: if exists r.src_host and r.src_host != \"\" then r.src_host else r.src}))\n  |> filter(fn: (r) => r.device == \"${device}\")\n  |> keep(columns: [\"_time\", \"in_bytes\"])\n  |> rename(columns: {in_bytes: \"_value\"})\n  |> aggregateWindow(every: 1m, fn: sum, createEmpty: false)",
               "refId": "A"
             }
           ]
@@ -43,7 +43,7 @@ data:
             "name": "device",
             "type": "query",
             "datasource": { "type": "influxdb", "uid": "PE1145B8E425975A4" },
-            "query": "from(bucket: \"netflow\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"netflow\" and r._field == \"src\")\n  |> keep(columns: [\"_value\"])\n  |> distinct(column: \"_value\")",
+            "query": "from(bucket: \"netflow\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"netflow\" and (r._field == \"src\" or r._field == \"src_host\"))\n  |> pivot(rowKey: [\"_time\", \"source\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with device: if exists r.src_host and r.src_host != \"\" then r.src_host else r.src}))\n  |> keep(columns: [\"device\"])\n  |> distinct(column: \"device\")",
             "label": "Device",
             "multi": false,
             "includeAll": false,
